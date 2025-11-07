@@ -2,6 +2,7 @@ package com.sp.twofa.sms.auth;
 
 import java.util.List;
 
+import org.jboss.logging.Logger;
 import org.keycloak.Config.Scope;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.AuthenticatorFactory;
@@ -12,6 +13,8 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 public class SmsOtpAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
+
+    private static final Logger LOG = Logger.getLogger(SmsOtpAuthenticatorFactory.class);
 
     private static final Requirement[] REQUIREMENT_CHOICES = {
             Requirement.ALTERNATIVE,
@@ -60,10 +63,12 @@ public class SmsOtpAuthenticatorFactory implements AuthenticatorFactory, Configu
 
     @Override
     public void init(Scope config) {
+        LOG.infof("Initializing %s provider (build %s)", getDisplayType(), version());
     }
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
+        LOG.infof("%s provider registered successfully", getDisplayType());
     }
 
     @Override
@@ -98,5 +103,12 @@ public class SmsOtpAuthenticatorFactory implements AuthenticatorFactory, Configu
     @Override
     public Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
+    }
+
+    private String version() {
+        Package pkg = SmsOtpAuthenticatorFactory.class.getPackage();
+        return pkg != null && pkg.getImplementationVersion() != null
+                ? pkg.getImplementationVersion()
+                : "dev";
     }
 }

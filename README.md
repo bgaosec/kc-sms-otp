@@ -29,11 +29,24 @@ The resulting JAR is located at `target/sp-2fa-sms-0.1.0-SNAPSHOT.jar`.
 1. **Authenticator:**
    - Go to *Authentication → Flows → Browser*.
    - Add execution → select `SMS OTP (SP)` and set Requirement = `ALTERNATIVE`.
-   - In the execution actions menu choose *Config* and fill in SMS settings.
+   - In the execution actions menu choose *Config* and fill in SMS settings (see “Configure the plugin” below).
 2. **Required Action:**
    - Go to *Authentication → Required Actions*.
    - Enable `Verify Phone Number via SMS` and mark it as *Default Action* if every user must verify.
 3. **User Profile:** ensure `phoneNumber` and `phoneNumberVerified` attributes exist (classic Keycloak requires manual creation or user profile config).
+
+### Configure the plugin
+1. Open the `SMS OTP (SP)` execution’s *Config* dialog.
+2. Pick a `sms.vendor` and enter the vendor-specific credentials (API key/secret, SID, sender, etc.).
+3. (Optional) Provide defaults via realm attributes or environment variables—use the same keys (e.g. `SMS_APIKEY`) so both the authenticator and `Verify Phone` action can resolve them.
+4. Adjust behavior knobs:
+   - `sms.ttlSeconds` (OTP validity window)
+   - `sms.otpLength`
+   - `sms.resendSeconds`
+   - `sms.maxAttempts`
+   - `sms.timeoutMs`
+5. Save the config and re-run the Browser login flow to test.
+6. Verify Keycloak logs for messages like `Initializing SMS OTP (SP)` to confirm the provider loaded.
 
 ## Configuration Keys
 | Key | Description |
@@ -67,4 +80,4 @@ The same keys can be provided via **realm attributes** or **environment variable
 ## Development Tips
 - Add additional vendors by implementing `com.sp.twofa.sms.SmsSender` and extending the switch in `SmsSender.fromConfig`.
 - Additional languages: drop new `messages_xx.properties` in `src/main/resources/theme-resources/messages/`.
-- To test flows locally, enable DEBUG logging for `com.sp.twofa.sms` and Keycloak's `AuthenticationService` (OTP values are never logged).
+- Enable DEBUG logging for `com.sp.twofa.sms` and Keycloak's `AuthenticationService` when testing locally; the provider now logs load-time info so you can confirm registration at boot.
