@@ -1,2 +1,1 @@
 com.sp.twofa.sms.auth.SmsOtpAuthenticatorFactory
-com.sp.twofa.sms.requiredaction.VerifyPhoneRequiredActionFactory
