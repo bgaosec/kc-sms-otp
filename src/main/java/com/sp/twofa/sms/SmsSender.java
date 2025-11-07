@@ -3,6 +3,7 @@ package com.sp.twofa.sms;
 import org.jboss.logging.Logger;
 
 import com.sp.twofa.sms.sender.AfricasTalkingSender;
+import com.sp.twofa.sms.sender.DummySender;
 import com.sp.twofa.sms.sender.InfobipSender;
 import com.sp.twofa.sms.sender.MessageBirdSender;
 import com.sp.twofa.sms.sender.SinchSender;
@@ -30,6 +31,7 @@ public interface SmsSender {
             case "twilio" -> new TwilioSender(cfg);
             case "sinch" -> new SinchSender(cfg);
             case "messagebird" -> new MessageBirdSender(cfg);
+            case "dummy" -> new DummySender(cfg);
             default -> {
                 LOG.errorf("Unsupported SMS vendor configured: %s", cfg.vendor());
                 throw new IllegalArgumentException("Unsupported SMS vendor: " + cfg.vendor());

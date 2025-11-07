@@ -10,7 +10,7 @@
 ### SmsConfig / SmsSender
 - `SmsConfig` resolves effective values from (priority) authenticator config → realm attributes → environment variables.
 - Includes vendor credentials plus OTP behavior (length, TTL, resend cooldown, attempts, timeout).
-- `SmsSender` factory switches on `sms.vendor` and returns the concrete implementation.
+- `SmsSender` factory switches on `sms.vendor` and returns the concrete implementation; a `dummy` sender exists for local testing and only logs payloads.
 - Vendor classes live under `com.sp.twofa.sms.sender` and share an HTTP helper based on `java.net.http.HttpClient`.
 
 ### SmsOtpAuthenticator
@@ -38,7 +38,7 @@
 
 ## Configuration
 Key config keys exposed via the authenticator config UI:
-- `sms.vendor` (`infobip`, `africastalking`, `twilio`, `sinch`, `messagebird`).
+- `sms.vendor` (`infobip`, `africastalking`, `twilio`, `sinch`, `messagebird`, `dummy` for dry-runs).
 - Credentials (`sms.apiKey`, `sms.apiSecret`, `sms.accountSid`, `sms.fromNumber`, `sms.baseUrl`, `sms.region`).
 - Behavior (`sms.timeoutMs`, `sms.ttlSeconds`, `sms.otpLength`, `sms.resendSeconds`, `sms.maxAttempts`).
 

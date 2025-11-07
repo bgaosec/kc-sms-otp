@@ -51,7 +51,7 @@ The resulting JAR is located at `target/sp-2fa-sms-0.1.0-SNAPSHOT.jar`.
 ## Configuration Keys
 | Key | Description |
 | --- | --- |
-| `sms.vendor` | One of `infobip`, `africastalking`, `twilio`, `sinch`, `messagebird` (required). |
+| `sms.vendor` | One of `infobip`, `africastalking`, `twilio`, `sinch`, `messagebird`, `dummy` (required). |
 | `sms.fromNumber` | Sender address / phone number (required for most vendors). |
 | `sms.apiKey` | API key / token (vendor dependent). |
 | `sms.apiSecret` | Secret / auth token (Twilio auth token, Sinch token, etc.). |
@@ -76,6 +76,7 @@ The same keys can be provided via **realm attributes** or **environment variable
 - **Africa's Talking**: set `sms.accountSid` to your username, `sms.apiKey` to the API key, optional `sms.fromNumber` for short code/sender id.
 - **Infobip** + **MessageBird**: optionally set `sms.baseUrl` to the regional endpoint.
 - **Sinch**: `sms.accountSid` = Service Plan ID, `sms.apiSecret` = API token.
+- **Dummy**: test-only sender that logs SMS content and always generates an OTP made of `8`s whose length matches `sms.otpLength`.
 
 ## Development Tips
 - Add additional vendors by implementing `com.sp.twofa.sms.SmsSender` and extending the switch in `SmsSender.fromConfig`.

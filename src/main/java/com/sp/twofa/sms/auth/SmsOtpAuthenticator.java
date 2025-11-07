@@ -75,7 +75,7 @@ public class SmsOtpAuthenticator implements Authenticator {
 
     private void sendNewOtp(AuthenticationFlowContext context, String phone, SmsConfig config) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
-        String code = generateCode(config.otpLength());
+        String code = generateCode(config);
         long expiry = System.currentTimeMillis() + (config.ttlSeconds() * 1000L);
         LOG.debugf("Generated new SMS OTP for session=%s ttl=%d length=%d", authSession.getParentSession().getId(), config.ttlSeconds(), config.otpLength());
         authSession.setAuthNote(NOTE_CODE, code);
@@ -93,7 +93,7 @@ public class SmsOtpAuthenticator implements Authenticator {
             throw new IllegalStateException("Resend requested before cooldown");
         }
         LOG.debugf("Resending SMS OTP for authSession=%s after cooldown", authSession.getParentSession().getId());
-        String code = generateCode(config.otpLength());
+        String code = generateCode(config);
         long expiry = System.currentTimeMillis() + (config.ttlSeconds() * 1000L);
         authSession.setAuthNote(NOTE_CODE, code);
         authSession.setAuthNote(NOTE_EXP, Long.toString(expiry));
@@ -189,7 +189,11 @@ public class SmsOtpAuthenticator implements Authenticator {
         session.removeAuthNote(NOTE_LAST_SEND);
     }
 
-    private String generateCode(int length) {
+    private String generateCode(SmsConfig config) {
+        int length = config.otpLength();
+        if (config.vendor() != null && "dummy".equalsIgnoreCase(config.vendor())) {
+            return "8".repeat(length);
+        }
         int max = (int) Math.pow(10, length);
         int min = (int) Math.pow(10, length - 1);
         int number = RANDOM.nextInt(max - min) + min;
