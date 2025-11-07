@@ -20,6 +20,7 @@ public class VerifyPhoneRequiredActionFactory implements RequiredActionFactory {
 
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
+        LOG.debugf("Creating verify-phone required action for realm=%s", session.getContext().getRealm() != null ? session.getContext().getRealm().getName() : "n/a");
         return new VerifyPhoneRequiredAction(session);
     }
 

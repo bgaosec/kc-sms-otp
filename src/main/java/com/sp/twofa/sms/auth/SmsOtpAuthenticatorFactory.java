@@ -58,6 +58,7 @@ public class SmsOtpAuthenticatorFactory implements AuthenticatorFactory, Configu
 
     @Override
     public Authenticator create(KeycloakSession session) {
+        LOG.debugf("Creating authenticator instance for realm=%s", session.getContext().getRealm() != null ? session.getContext().getRealm().getName() : "n/a");
         return new SmsOtpAuthenticator(session);
     }
 

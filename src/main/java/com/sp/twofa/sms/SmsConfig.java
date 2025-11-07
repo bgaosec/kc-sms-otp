@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jboss.logging.Logger;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -28,6 +29,8 @@ public record SmsConfig(
         int resendIntervalSeconds,
         int maxAttempts
 ) {
+
+    private static final Logger LOG = Logger.getLogger(SmsConfig.class);
 
     public static SmsConfig from(KeycloakSession session, AuthenticatorConfigModel cfg) {
         Map<String, String> direct = cfg != null && cfg.getConfig() != null ? cfg.getConfig() : Collections.emptyMap();
@@ -60,7 +63,12 @@ public record SmsConfig(
         int otpLength = clamp(parseInt(resolve("sms.otpLength", primary, secondary), 6), 4, 10);
         int resend = parseInt(resolve("sms.resendSeconds", primary, secondary), 45);
         int attempts = parseInt(resolve("sms.maxAttempts", primary, secondary), 5);
-        return new SmsConfig(vendor, apiKey, apiSecret, accountSid, fromNumber, baseUrl, region, timeout, ttl, otpLength, resend, attempts);
+        SmsConfig resolved = new SmsConfig(vendor, apiKey, apiSecret, accountSid, fromNumber, baseUrl, region, timeout, ttl, otpLength, resend, attempts);
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Resolved SmsConfig vendor=%s ttl=%d otpLength=%d resend=%d attempts=%d timeout=%d",
+                    vendor, ttl, otpLength, resend, attempts, timeout);
+        }
+        return resolved;
     }
 
     private static String resolve(String key, Map<String, String> primary, Map<String, String> secondary) {

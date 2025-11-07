@@ -43,6 +43,9 @@ public class SmsOtpAuthenticator implements Authenticator {
         UserModel user = context.getUser();
         String phone = user != null ? user.getFirstAttribute("phoneNumber") : null;
         boolean verified = Boolean.parseBoolean(Objects.requireNonNullElse(user != null ? user.getFirstAttribute("phoneNumberVerified") : null, "false"));
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("SMS OTP authenticate invoked for user=%s verified=%s hasPhone=%s", user != null ? user.getUsername() : "n/a", verified, phone != null);
+        }
         if (phone == null || !verified) {
             LOG.debugf("User %s has no verified phone number for SMS OTP", user != null ? user.getUsername() : "?");
             context.attempted();
@@ -74,6 +77,7 @@ public class SmsOtpAuthenticator implements Authenticator {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         String code = generateCode(config.otpLength());
         long expiry = System.currentTimeMillis() + (config.ttlSeconds() * 1000L);
+        LOG.debugf("Generated new SMS OTP for session=%s ttl=%d length=%d", authSession.getParentSession().getId(), config.ttlSeconds(), config.otpLength());
         authSession.setAuthNote(NOTE_CODE, code);
         authSession.setAuthNote(NOTE_EXP, Long.toString(expiry));
         authSession.setAuthNote(NOTE_ATTEMPTS, "0");
@@ -88,6 +92,7 @@ public class SmsOtpAuthenticator implements Authenticator {
         if ((now - lastSent) / 1000 < config.resendIntervalSeconds()) {
             throw new IllegalStateException("Resend requested before cooldown");
         }
+        LOG.debugf("Resending SMS OTP for authSession=%s after cooldown", authSession.getParentSession().getId());
         String code = generateCode(config.otpLength());
         long expiry = System.currentTimeMillis() + (config.ttlSeconds() * 1000L);
         authSession.setAuthNote(NOTE_CODE, code);
@@ -100,6 +105,7 @@ public class SmsOtpAuthenticator implements Authenticator {
     private void sendSms(String phone, String code, SmsConfig config) {
         try {
             SmsSender sender = SmsSender.fromConfig(config);
+            LOG.debugf("Dispatching SMS OTP using vendor=%s to maskedPhone=%s", config.vendor(), maskPhone(phone));
             sender.send(phone, "Your verification code is " + code);
         } catch (Exception ex) {
             LOG.error("Failed to dispatch SMS OTP", ex);
@@ -112,6 +118,9 @@ public class SmsOtpAuthenticator implements Authenticator {
         long lastSent = parseLong(authSession.getAuthNote(NOTE_LAST_SEND));
         long now = System.currentTimeMillis();
         long secondsUntilResend = Math.max(0, config.resendIntervalSeconds() - ((now - lastSent) / 1000));
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Rendering SMS OTP form maskedPhone=%s resendSeconds=%d", maskPhone(phone), secondsUntilResend);
+        }
         LoginFormsProvider form = context.form();
         form.setAttribute("resendSeconds", secondsUntilResend);
         form.setAttribute("maskedPhone", maskPhone(phone));
@@ -132,6 +141,7 @@ public class SmsOtpAuthenticator implements Authenticator {
                 resendOtp(context, phone, config);
                 challenge(context, config, phone, null);
             } catch (IllegalStateException ex) {
+                LOG.debugf("Resend blocked due to cooldown for user=%s", user != null ? user.getUsername() : "n/a");
                 challenge(context, config, phone, "smsResendCooldown");
             }
             return;
@@ -163,9 +173,11 @@ public class SmsOtpAuthenticator implements Authenticator {
         }
         if (!code.equals(submitted.trim())) {
             authSession.setAuthNote(NOTE_ATTEMPTS, Integer.toString(attempts + 1));
+            LOG.debugf("Invalid SMS OTP provided. attempt=%d/%d", attempts + 1, config.maxAttempts());
             challenge(context, config, phone, "smsCodeInvalid");
             return;
         }
+        LOG.debugf("SMS OTP validated for user=%s", user != null ? user.getUsername() : "n/a");
         clearNotes(authSession);
         context.success();
     }

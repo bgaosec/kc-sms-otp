@@ -46,7 +46,7 @@ The resulting JAR is located at `target/sp-2fa-sms-0.1.0-SNAPSHOT.jar`.
    - `sms.maxAttempts`
    - `sms.timeoutMs`
 5. Save the config and re-run the Browser login flow to test.
-6. Verify Keycloak logs for messages like `Initializing SMS OTP (SP)` to confirm the provider loaded.
+6. Verify Keycloak logs for messages like `Initializing SMS OTP (SP)` and `Creating authenticator instance...` to confirm the provider loaded; enable DEBUG for `com.sp.twofa.sms` to see OTP flow events.
 
 ## Configuration Keys
 | Key | Description |

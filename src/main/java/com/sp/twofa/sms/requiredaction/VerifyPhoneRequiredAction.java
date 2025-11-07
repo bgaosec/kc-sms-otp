@@ -34,6 +34,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
         boolean verified = Boolean.parseBoolean(user.getFirstAttribute("phoneNumberVerified"));
         boolean alreadyQueued = user.getRequiredActionsStream()
                 .anyMatch(VerifyPhoneRequiredActionFactory.PROVIDER_ID::equals);
+        LOG.debugf("verify-phone evaluateTriggers user=%s verified=%s alreadyQueued=%s", user.getUsername(), verified, alreadyQueued);
         if (!verified && !alreadyQueued) {
             user.addRequiredAction(VerifyPhoneRequiredActionFactory.PROVIDER_ID);
         }
@@ -59,6 +60,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
                 sendCode(context, phoneInput.trim());
                 render(context, "verifyPhoneCodeSent", true);
             } catch (RuntimeException ex) {
+                LOG.errorf(ex, "Failed to send verification SMS for user=%s", context.getUser().getUsername());
                 render(context, "verifyPhoneSendFailed", false);
             }
             return;
@@ -84,6 +86,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
             user.setSingleAttribute("phoneNumber", phone);
         }
         user.setSingleAttribute("phoneNumberVerified", "true");
+        LOG.debugf("Phone verification completed for user=%s", user.getUsername());
         cleanup(authSession);
         context.success();
     }
@@ -100,6 +103,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
             throw new RuntimeException("Cooldown active");
         }
         try {
+            LOG.debugf("Sending verification SMS via vendor=%s to maskedPhone=%s", config.vendor(), mask(phone));
             sender.send(phone, "Your verification code is " + code);
         } catch (Exception e) {
             LOG.error("Failed to send phone verification SMS", e);
@@ -121,6 +125,9 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
         form.setAttribute("currentPhone", existing);
         form.setAttribute("pendingPhone", authSession.getAuthNote(NOTE_PHONE));
         form.setAttribute("resendSeconds", seconds);
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Rendering verify-phone form user=%s resendSeconds=%d", context.getUser().getUsername(), seconds);
+        }
         if (messageKey != null) {
             if (success) {
                 form.setInfo(messageKey);
@@ -152,6 +159,13 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
         } catch (NumberFormatException ex) {
             return 0;
         }
+    }
+
+    private String mask(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return "****";
+        }
+        return "***" + phone.substring(phone.length() - 2);
     }
 
     @Override
