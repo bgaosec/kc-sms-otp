@@ -36,33 +36,37 @@ public record SmsConfig(
         Map<String, String> direct = cfg != null && cfg.getConfig() != null ? cfg.getConfig() : Collections.emptyMap();
         RealmModel realm = session != null ? session.getContext().getRealm() : null;
         Map<String, String> realmAttrs = realm != null ? realm.getAttributes() : Collections.emptyMap();
-        return from(direct, realmAttrs);
+        return from(direct, realmAttrs, System::getenv);
     }
 
     public static SmsConfig from(KeycloakSession session) {
         RealmModel realm = session != null ? session.getContext().getRealm() : null;
         Map<String, String> realmAttrs = realm != null ? realm.getAttributes() : Collections.emptyMap();
-        return from(Collections.emptyMap(), realmAttrs);
+        return from(Collections.emptyMap(), realmAttrs, System::getenv);
     }
 
     public static SmsConfig from(AuthenticatorConfigModel cfg) {
         Map<String, String> direct = cfg != null && cfg.getConfig() != null ? cfg.getConfig() : Collections.emptyMap();
-        return from(direct, Collections.emptyMap());
+        return from(direct, Collections.emptyMap(), System::getenv);
     }
 
-    private static SmsConfig from(Map<String, String> primary, Map<String, String> secondary) {
-        String vendor = resolve("sms.vendor", primary, secondary);
-        String apiKey = resolve("sms.apiKey", primary, secondary);
-        String apiSecret = resolve("sms.apiSecret", primary, secondary);
-        String accountSid = resolve("sms.accountSid", primary, secondary);
-        String fromNumber = resolve("sms.fromNumber", primary, secondary);
-        String baseUrl = resolve("sms.baseUrl", primary, secondary);
-        String region = resolve("sms.region", primary, secondary);
-        int timeout = parseInt(resolve("sms.timeoutMs", primary, secondary), 7000);
-        int ttl = parseInt(resolve("sms.ttlSeconds", primary, secondary), 300);
-        int otpLength = clamp(parseInt(resolve("sms.otpLength", primary, secondary), 6), 4, 10);
-        int resend = parseInt(resolve("sms.resendSeconds", primary, secondary), 45);
-        int attempts = parseInt(resolve("sms.maxAttempts", primary, secondary), 5);
+    public static SmsConfig forTest(Map<String, String> primary, Map<String, String> secondary, java.util.function.Function<String, String> envLookup) {
+        return from(primary, secondary, envLookup);
+    }
+
+    static SmsConfig from(Map<String, String> primary, Map<String, String> secondary, java.util.function.Function<String, String> envLookup) {
+        String vendor = resolve("sms.vendor", primary, secondary, envLookup);
+        String apiKey = resolve("sms.apiKey", primary, secondary, envLookup);
+        String apiSecret = resolve("sms.apiSecret", primary, secondary, envLookup);
+        String accountSid = resolve("sms.accountSid", primary, secondary, envLookup);
+        String fromNumber = resolve("sms.fromNumber", primary, secondary, envLookup);
+        String baseUrl = resolve("sms.baseUrl", primary, secondary, envLookup);
+        String region = resolve("sms.region", primary, secondary, envLookup);
+        int timeout = parseInt(resolve("sms.timeoutMs", primary, secondary, envLookup), 7000);
+        int ttl = parseInt(resolve("sms.ttlSeconds", primary, secondary, envLookup), 300);
+        int otpLength = clamp(parseInt(resolve("sms.otpLength", primary, secondary, envLookup), 6), 4, 10);
+        int resend = parseInt(resolve("sms.resendSeconds", primary, secondary, envLookup), 45);
+        int attempts = parseInt(resolve("sms.maxAttempts", primary, secondary, envLookup), 5);
         SmsConfig resolved = new SmsConfig(vendor, apiKey, apiSecret, accountSid, fromNumber, baseUrl, region, timeout, ttl, otpLength, resend, attempts);
         if (LOG.isDebugEnabled()) {
             LOG.debugf("Resolved SmsConfig vendor=%s ttl=%d otpLength=%d resend=%d attempts=%d timeout=%d",
@@ -71,7 +75,7 @@ public record SmsConfig(
         return resolved;
     }
 
-    private static String resolve(String key, Map<String, String> primary, Map<String, String> secondary) {
+    private static String resolve(String key, Map<String, String> primary, Map<String, String> secondary, java.util.function.Function<String, String> envLookup) {
         if (primary.containsKey(key)) {
             return emptyToNull(primary.get(key));
         }
@@ -79,7 +83,7 @@ public record SmsConfig(
             return emptyToNull(secondary.get(key));
         }
         String envKey = key.replace('.', '_').toUpperCase(Locale.ROOT);
-        return emptyToNull(System.getenv(envKey));
+        return emptyToNull(envLookup.apply(envKey));
     }
 
     private static String emptyToNull(String value) {

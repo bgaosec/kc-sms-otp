@@ -20,6 +20,14 @@ public class DummySender implements SmsSender {
 
     @Override
     public void send(String toE164, String message) {
-        LOG.infof("[Dummy SMS] to=%s message=%s", toE164, message);
+        String masked = mask(toE164);
+        LOG.warnf("[Dummy SMS] to=%s chars=%d", masked, message != null ? message.length() : 0);
+    }
+
+    private String mask(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return "****";
+        }
+        return "***" + phone.substring(phone.length() - 2);
     }
 }

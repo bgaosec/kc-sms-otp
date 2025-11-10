@@ -92,7 +92,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
     }
 
     private void sendCode(RequiredActionContext context, String phone) {
-        SmsConfig config = SmsConfig.from(session);
+        SmsConfig config = resolveConfig(context);
         SmsSender sender = SmsSender.fromConfig(config);
         String code = generateCode(config);
         long expiry = System.currentTimeMillis() + (config.ttlSeconds() * 1000L);
@@ -117,7 +117,7 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
     private void render(RequiredActionContext context, String messageKey, boolean success) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         long last = parseLong(authSession.getAuthNote(NOTE_LAST_SEND));
-        SmsConfig config = SmsConfig.from(session);
+        SmsConfig config = resolveConfig(context);
         long now = System.currentTimeMillis();
         long seconds = Math.max(0, config.resendIntervalSeconds() - ((now - last) / 1000));
         String existing = context.getUser().getFirstAttribute("phoneNumber");
@@ -136,6 +136,16 @@ public class VerifyPhoneRequiredAction implements RequiredActionProvider {
             }
         }
         context.challenge(form.createForm("verify-phone.ftl"));
+    }
+
+    private SmsConfig resolveConfig(RequiredActionContext context) {
+        org.keycloak.models.AuthenticatorConfigModel tmp = new org.keycloak.models.AuthenticatorConfigModel();
+        if (context.getConfig() != null && context.getConfig().getConfig() != null) {
+            tmp.setConfig(context.getConfig().getConfig());
+        } else {
+            tmp.setConfig(java.util.Collections.emptyMap());
+        }
+        return SmsConfig.from(session, tmp);
     }
 
     private void cleanup(AuthenticationSessionModel authSession) {

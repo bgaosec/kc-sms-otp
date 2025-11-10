@@ -82,3 +82,4 @@ The same keys can be provided via **realm attributes** or **environment variable
 - Add additional vendors by implementing `com.sp.twofa.sms.SmsSender` and extending the switch in `SmsSender.fromConfig`.
 - Additional languages: drop new `messages_xx.properties` in `src/main/resources/theme-resources/messages/`.
 - Enable DEBUG logging for `com.sp.twofa.sms` and Keycloak's `AuthenticationService` when testing locally; the provider now logs load-time info so you can confirm registration at boot.
+- Run the included JUnit/WireMock/CLI driver tests with `mvn test` (details in `TESTING.md`) to validate OTP logic without a Keycloak runtime.
